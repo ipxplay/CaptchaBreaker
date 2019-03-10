@@ -48,6 +48,25 @@ flags = cv.KMEANS_RANDOM_CENTERS
 # Apply KMeans
 compactness, labels, centers = cv.kmeans(z, 5, None, criteria, 10, flags)
 
+# display the result of k-means
+# image = cv.cvtColor(image, cv.COLOR_GRAY2BGR)
+# define colors to be used
+# colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0],
+#           [255, 0, 255]]
+#
+# for i, (row, col) in enumerate(features):
+#     # labels[0]=[0]
+#     image[row][col] = colors[labels[i][0]]
+#
+# for _, col in centers:
+#     col = int(col)
+#     for i in range(height):
+#         image[i][col] = [255, 255, 255]
+#
+# plt.imshow(image)
+# plt.xticks([]), plt.yticks([])
+# plt.show()
+
 # convert to color image for extracting
 image = cv.cvtColor(image, cv.COLOR_GRAY2BGR)
 
