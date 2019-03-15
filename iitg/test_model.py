@@ -28,7 +28,7 @@ for (i, path) in enumerate(paths.list_images(config.TEST_DATA_PATH)):
 
     for char in charList:
         image = cv.cvtColor(char, cv.COLOR_BGR2GRAY)
-        image = captchahelper.preprocess(image, 45, 45)
+        image = captchahelper.preprocess(image, config.INPUT_SIZE,config.INPUT_SIZE)
         image = img_to_array(image)
         data = np.expand_dims(image, axis=0) / 255.0
         pred = model.predict(data).argmax(axis=1)[0]

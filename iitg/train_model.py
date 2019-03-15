@@ -22,7 +22,7 @@ def read_data_labels():
 
     for imagePath in paths.list_images(config.PREPROCESS_DATA_PATH):
         image = cv.imread(imagePath, cv.IMREAD_GRAYSCALE)
-        image = captchahelper.preprocess(image, 45, 45)
+        image = captchahelper.preprocess(image, config.INPUT_SIZE, config.INPUT_SIZE)
         # return a 3D Numpy array
         image = img_to_array(image)
         data.append(image)
@@ -53,7 +53,7 @@ def prepare_data_labels(data, labels):
 
 def train_model(trainX, testX, trainY, testY, lb):
     print('[INFO] compiling model...')
-    model = LeNet.build(width=45, height=45, depth=1, classes=28)
+    model = LeNet.build(width=config.INPUT_SIZE, height=config.INPUT_SIZE, depth=1, classes=28)
     opt = SGD(lr=0.01, decay=0.01 / 10, momentum=0.9, nesterov=True)
 
     model.compile(loss='categorical_crossentropy', optimizer=opt,
