@@ -4,6 +4,6 @@ TEST_DATA_PATH = 'datasets/testset'
 
 OUTPUT_PATH = 'output/'
 MODEL_LABELS = OUTPUT_PATH + 'lebels.mat'
-MODEL_PATH = OUTPUT_PATH + 'lenet.hdf5'
+# MODEL_PATH = OUTPUT_PATH + 'lenet.hdf5'
 
 INPUT_SIZE = 48

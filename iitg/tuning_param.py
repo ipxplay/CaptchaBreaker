@@ -1,7 +1,7 @@
 from time import time
 
 import numpy as np
-from keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
+from keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
 from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.wrappers.scikit_learn import KerasClassifier
@@ -64,7 +64,7 @@ def lenet5_model(filters1=32, k_size1=3, filters2=32, k_size2=3,
 
 
 if __name__ == '__main__':
-    model = KerasClassifier(build_fn=lenet5_model, verbose=1)
+    model = KerasClassifier(build_fn=lenet5_model)
 
     filters1 = [6, 16, 32, 64]
     k_size1 = [3, 5]
@@ -99,19 +99,20 @@ if __name__ == '__main__':
     data = np.array(data, dtype='float') / 255.0
     labels = np.array(labels)
     lb = LabelBinarizer().fit(labels)
-    labels=lb.transform(labels)
+    labels = lb.transform(labels)
 
     n_iter_search = 8
     random_search = RandomizedSearchCV(estimator=model,
                                        param_distributions=hyperparams,
                                        n_iter=n_iter_search,
-                                       n_jobs=3,
+                                       n_jobs=-2,
                                        cv=4,
-                                       verbose=2)
+                                       verbose=2,
+                                       random_state=42)
 
     start = time()
     random_search.fit(data, labels,
-                      epochs=10, batch_size=32,verbose=2)
+                      epochs=20, batch_size=32, verbose=2)
 
     print("RandomizedSearchCV took %.2f seconds for %d candidates"
           " parameter settings." % ((time() - start), n_iter_search))
