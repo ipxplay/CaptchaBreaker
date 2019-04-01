@@ -6,16 +6,19 @@ from iitg.preprocess.seg_image import seg_image
 from iitg import config
 
 # for filename count
-counts = {}
 
-for i, filePath in enumerate(paths.list_images(config.TRAIN_DATA_PATH)):
+
+INPUT = 'datasets/allset'
+OUTPUT = 'segmented'
+counts = {}
+for i, filePath in enumerate(paths.list_images(INPUT)):
     print(f'[INFO] processing the {i + 1} image')
 
     charImgs = seg_image(filePath)
     chars = os.path.basename(filePath).split('.')[0]
 
     for img, c in zip(charImgs, chars):
-        dstPath = os.path.sep.join([config.PREPROCESS_DATA_PATH, c])
+        dstPath = os.path.sep.join([OUTPUT, c])
         if not os.path.exists(dstPath):
             os.makedirs(dstPath)
 

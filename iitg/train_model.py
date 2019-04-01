@@ -1,4 +1,4 @@
-
+import argparse
 import os
 import pickle
 
@@ -6,18 +6,16 @@ import cv2 as cv
 import numpy as np
 from imutils import paths
 from keras.callbacks import ModelCheckpoint
-from keras.optimizers import SGD
+from keras.models import load_model
+from keras.optimizers import Adam
 from keras.preprocessing.image import img_to_array, ImageDataGenerator
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 
+from iitg import config
 from pyimagesearch.callbacks import TrainingMonitor
 from pyimagesearch.nn.conv.lenet5 import LeNet5
-from pyimagesearch.nn.conv.lenet import LeNet
 from pyimagesearch.utils import captchahelper
-import argparse
-from iitg import config
 
 
 def init():
@@ -28,9 +26,8 @@ def init():
     return args
 
 
-def read_data_labels():
+def read_data_labels(path):
     data, labels = [], []
-    path = config.PREPROCESS_DATA_PATH
     for imagePath in paths.list_images(path):
         image = cv.imread(imagePath, cv.IMREAD_GRAYSCALE)
         image = captchahelper.preprocess(image, config.INPUT_SIZE, config.INPUT_SIZE)
@@ -48,56 +45,80 @@ def prepare_data_labels(data, labels):
     data = np.array(data, dtype='float') / 255.0
     labels = np.array(labels)
 
-    trainX, devX, trainY, devY = train_test_split(
-        data, labels, test_size=0.25, random_state=42)
+    if os.path.exists(config.MODEL_LABELS):
+        with open(config.MODEL_LABELS, 'rb') as f:
+            lb = pickle.load(f)
+    else:
+        lb = LabelBinarizer().fit(labels)
+        # save the encode label for decoding
+        with open(config.MODEL_LABELS, "wb") as f:
+            pickle.dump(lb, f)
 
-    lb = LabelBinarizer().fit(trainY)
-    trainY = lb.transform(trainY)
-    devY = lb.transform(devY)
-
-    # save the encode label for decoding
-    with open(config.MODEL_LABELS, "wb") as f:
-        pickle.dump(lb, f)
-
-    return trainX, devX, trainY, devY, lb
+    labels = lb.transform(labels)
+    return data, labels
 
 
-def train_model(trainX, devX, trainY, devY, lb, args):
+alpha0 = 0.001
+
+
+def train_model(trainX, trainY, devX, devY, args, lb):
     print('[INFO] compiling model...')
     model = LeNet5.build(width=config.INPUT_SIZE, height=config.INPUT_SIZE, depth=1, classes=28)
 
-    modelPath = os.path.sep.join([config.OUTPUT_PATH, f'{args["no"]}.hdf5'])
+    PATH = os.path.sep.join([config.OUTPUT_PATH, args['no']])
+    if not os.path.exists(PATH):
+        os.makedirs(PATH)
+
+    modelPath = os.path.sep.join([PATH, f'{args["no"]}.hdf5'])
     checkpoint = ModelCheckpoint(modelPath, monitor='val_loss', mode='min',
                                  save_best_only=True, verbose=1)
 
-    figPath = os.path.sep.join([config.OUTPUT_PATH, f'{args["no"]}.png'])
-    jsonPath = os.path.sep.join([config.OUTPUT_PATH, f'{args["no"]}.json'])
+    figPath = os.path.sep.join([PATH, f'{args["no"]}.png'])
+    jsonPath = os.path.sep.join([PATH, f'{args["no"]}.json'])
     callbacks = [checkpoint, TrainingMonitor(figPath, jsonPath)]
 
-    aug = ImageDataGenerator(rotation_range=30, width_shift_range=0.1,
-                             height_shift_range=0.1, shear_range=0.2, zoom_range=0.2,
-                             horizontal_flip=True, fill_mode="nearest")
+    aug = ImageDataGenerator(
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+    )
 
     print('[INFO] training network...')
-    # opt = SGD(lr=0.01, decay=0.01 / 10, momentum=0.9, nesterov=True)
-    # model.compile(loss='categorical_crossentropy',
-    #               optimizer=opt,
-    #               metrics=['accuracy'])
-    model.fit(trainX, trainY, validation_data=(devX, devY), batch_size=32,
-              epochs=20, verbose=2, callbacks=callbacks)
-    # model.fit_generator(aug.flow(trainX, trainY, batch_size=32),
-    #                     validation_data=(devX, devY), steps_per_epoch=len(trainX) // 32,
-    #                     epochs=20, callbacks=callbacks, verbose=2)
+    opt = Adam(lr=alpha0)
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=opt,
+                  metrics=['accuracy'])
 
-    print("[INFO] serializing network...")
-    model.save(modelPath)
+    if os.path.exists(modelPath):
+        model.load_weights(modelPath)
+        print('[INFO] loaded checkpoint...')
 
+    batchSize = 64
+    # model.fit(trainX, trainY, validation_data=(devX, devY), batch_size=batchSize,
+    #           epochs=20, verbose=2, callbacks=callbacks)
+
+    # all random state must set random seed
+    model.fit_generator(
+        aug.flow(trainX, trainY, batch_size=batchSize, seed=42),
+        validation_data=(devX, devY),
+        steps_per_epoch=len(trainX) // batchSize,
+        epochs=20, callbacks=callbacks, verbose=2)
+
+    model = load_model(modelPath)
     print('[INFO] evaluating network...')
-    preds = model.predict(devX, batch_size=32)
+    preds = model.predict(devX, batch_size=batchSize)
     print(classification_report(devY.argmax(axis=1),
                                 preds.argmax(axis=1), target_names=lb.classes_))
+    print(f'the experiment no is {args["no"]}')
+
+    from iitg.test_model import test_model_2
+    testAcc, testAmount = test_model_2(args['no'], modelPath, config.TEST_DATA_PATH)
+    print(f'test: accuary/amount is {testAcc}/{testAmount}')
 
 
 if __name__ == '__main__':
     args = init()
-    train_model(*prepare_data_labels(*read_data_labels()), args)
+    trainX, trainY = prepare_data_labels(*read_data_labels(config.TRAIN_DATA_PATH))
+    devX, devY = prepare_data_labels(*read_data_labels(config.DEV_DATA_PATH))
+    with open(config.MODEL_LABELS, 'rb') as f:
+        lb = pickle.load(f)
+    train_model(trainX, trainY, devX, devY, args, lb)

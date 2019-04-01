@@ -35,11 +35,11 @@ def seg_image(path):
 
     # extract character
     # 45 is measured from the original figure
-    charHeight, charWeight = height, 45
+    charHeight, charWidth = height, 45
     charImgs = []
     centers = sorted(centers, key=lambda x: x[1])
 
-    step = charWeight // 2
+    step = charWidth // 2
 
     for _, colNum in centers:
         colNum = int(colNum)

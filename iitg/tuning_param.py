@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     start = time()
     random_search.fit(data, labels,
-                      epochs=20, batch_size=32, verbose=2)
+                      epochs=20, batch_size=64, verbose=2)
 
     print("RandomizedSearchCV took %.2f seconds for %d candidates"
           " parameter settings." % ((time() - start), n_iter_search))

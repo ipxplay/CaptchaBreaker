@@ -37,7 +37,7 @@ class TrainingMonitor(BaseLogger):
                 f.write(json.dumps(self.H))
 
         if len(self.H['loss']) > 1:
-            N = np.arange(0, len(self.H['loss']))
+            N = np.arange(1, len(self.H['loss']) + 1)
             plt.style.use('ggplot')
             plt.figure()
             plt.plot(N, self.H['loss'], label='train_loss')
