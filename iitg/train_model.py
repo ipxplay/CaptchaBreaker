@@ -101,7 +101,7 @@ def train_model(trainX, trainY, devX, devY, args, lb):
         aug.flow(trainX, trainY, batch_size=batchSize, seed=42),
         validation_data=(devX, devY),
         steps_per_epoch=len(trainX) // batchSize,
-        epochs=20, callbacks=callbacks, verbose=2)
+        epochs=10, callbacks=callbacks, verbose=2)
 
     model = load_model(modelPath)
     print('[INFO] evaluating network...')
@@ -110,9 +110,34 @@ def train_model(trainX, trainY, devX, devY, args, lb):
                                 preds.argmax(axis=1), target_names=lb.classes_))
     print(f'the experiment no is {args["no"]}')
 
-    from iitg.test_model import test_model_2
-    testAcc, testAmount = test_model_2(args['no'], modelPath, config.TEST_DATA_PATH)
+    testAcc, testAmount = test_model(args['no'], modelPath, config.TEST_DATA_PATH)
     print(f'test: accuary/amount is {testAcc}/{testAmount}')
+
+
+def test_model(no, modelPath, path):
+    """test the testset"""
+
+    model = load_model(modelPath)
+
+    with open(config.MODEL_LABELS, "rb") as f:
+        lb = pickle.load(f)
+
+    data, labels = read_data_labels(path)
+    data = np.array(data, dtype='float') / 255.0
+    labels = np.array(labels)
+
+    preds = model.predict(data)
+    preds = lb.inverse_transform(preds)
+    amount = len(labels)
+    assert len(preds) == len(labels)
+    ac = 0
+    for label, pred in zip(labels, preds):
+        if label == pred:
+            ac += 1
+
+    print(f'[INFO] ac/amount: {ac}/{amount}')
+    print(f'[INFO] the experiment no is: {no}')
+    return ac, amount
 
 
 if __name__ == '__main__':

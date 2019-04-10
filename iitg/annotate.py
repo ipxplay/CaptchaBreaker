@@ -1,7 +1,7 @@
 import os
 from imutils import paths
 import cv2 as cv
-from iitg.preprocess.seg_image import seg_image
+from iitg.common.seg_image import seg_image
 
 from iitg import config
 
