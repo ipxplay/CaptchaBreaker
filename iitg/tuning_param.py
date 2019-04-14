@@ -1,7 +1,7 @@
 from time import time
 
 import numpy as np
-from keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.wrappers.scikit_learn import KerasClassifier
@@ -9,7 +9,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import LabelBinarizer
 
 from iitg import config
-from iitg.train_model import read_data_labels
+from iitg.core.train_model import read_data_labels
 
 
 # Utility function to report best scores

@@ -1,20 +1,20 @@
 import os
-from imutils import paths
-import cv2 as cv
-from iitg.common.seg_image import seg_image
 
-from iitg import config
+import cv2 as cv
+from imutils import paths
+
+from iitg.common.segment import seg_image
 
 # for filename count
 
 
 INPUT = 'datasets/allset'
-OUTPUT = 'segmented'
+OUTPUT = 'datasets/segmented'
 counts = {}
 for i, filePath in enumerate(paths.list_images(INPUT)):
     print(f'[INFO] processing the {i + 1} image')
 
-    charImgs = seg_image(filePath)
+    charImgs, _ = seg_image(filePath)
     chars = os.path.basename(filePath).split('.')[0]
 
     for img, c in zip(charImgs, chars):

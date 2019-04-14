@@ -18,8 +18,8 @@ class LeNet5:
         inputShape = (height, width, depth)
 
         dropout = 0.2
-        k_size1 = 5
-        k_size2 = 5
+        k_size1 = 3
+        k_size2 = 3
         filters1 = 32
         filters2 = 64
 
@@ -30,10 +30,14 @@ class LeNet5:
         model.add(Conv2D(filters1, (k_size1, k_size1),
                          input_shape=inputShape, padding='same'))
         model.add(Activation('relu'))
+        model.add(Conv2D(filters1, (k_size1, k_size1), padding='same'))
+        model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
         model.add(Dropout(dropout))
 
         # second set of CONV=>RELU=>POOL layers
+        model.add(Conv2D(filters2, (k_size2, k_size2), padding='same'))
+        model.add(Activation('relu'))
         model.add(Conv2D(filters2, (k_size2, k_size2), padding='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))

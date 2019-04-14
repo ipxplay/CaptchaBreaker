@@ -1,13 +1,10 @@
 import argparse
 import os
-import pickle
 
 from imutils import paths
-from keras.models import load_model
 
-from iitg import config
-from iitg.common.recognize import recognize_whole
-from iitg.common.seg_image import seg_image
+from iitg.common.loads import load_model_lables
+from iitg.common.segment import seg_image, recognize_whole
 
 
 def init():
@@ -16,25 +13,23 @@ def init():
     return vars(ap.parse_args())
 
 
-def test_model(no, modelPath, path):
+def test_model(no, path):
     """test model from the whole picture"""
-    model = load_model(modelPath)
-
-    with open(config.MODEL_LABELS, "rb") as f:
-        lb = pickle.load(f)
+    model, lb = load_model_lables(no)
 
     correct = 0
     amount = 0
+    allTime = 0
 
     # load image from test path
     for (i, path) in enumerate(paths.list_images(path)):
-        # print(f'[INFO] processing {i + 1}-th image')
 
-        charList = seg_image(path)
+        charList, time = seg_image(path)
+        allTime += time
+        predictions, time = recognize_whole(model, lb, charList)
+        allTime += time
 
         real = os.path.basename(path).split('.')[0]
-        predictions = recognize_whole(model, lb, charList)
-
         if predictions == real:
             correct += 1
 
@@ -50,14 +45,13 @@ def test_model(no, modelPath, path):
         # plt.imshow(image)
         # plt.show()
 
-    print(f'the correct/amount is : {correct}/{amount}')
-    print(f'the experiment no is {no}')
-
-    return correct, amount
+    return correct, amount, allTime
 
 
 if __name__ == '__main__':
     args = init()
-    modelPath = os.path.sep.join([config.OUTPUT_PATH, f'{args["no"]}',
-                                  f'{args["no"]}.hdf5'])
-    test_model(args['no'], modelPath, 'datasets/allset')
+    no = args['no']
+    correct, amount, allTime = test_model(no, '../datasets/allset')
+    print(f'the correct/amount is : {correct}/{amount}')
+    print(f'the avg time is {allTime / amount:.3}s')
+    print(f'the experiment no is {no}')

@@ -58,13 +58,7 @@ def prepare_data_labels(data, labels):
     return data, labels
 
 
-alpha0 = 0.001
-
-
-def train_model(trainX, trainY, devX, devY, args, lb):
-    print('[INFO] compiling model...')
-    model = LeNet5.build(width=config.INPUT_SIZE, height=config.INPUT_SIZE, depth=1, classes=28)
-
+def train_model(trainX, trainY, devX, devY, args):
     PATH = os.path.sep.join([config.OUTPUT_PATH, args['no']])
     if not os.path.exists(PATH):
         os.makedirs(PATH)
@@ -83,16 +77,18 @@ def train_model(trainX, trainY, devX, devY, args, lb):
     )
 
     print('[INFO] training network...')
-    opt = Adam(lr=alpha0)
-    model.compile(loss='categorical_crossentropy',
+    if  os.path.exists(modelPath):
+        model = load_model(modelPath)
+        print('[INFO] loaded checkpoint...')
+    else:
+        print('[INFO] compiling model...')
+        model = LeNet5.build(width=config.INPUT_SIZE, height=config.INPUT_SIZE, depth=1, classes=28)
+        opt = Adam(lr=0.001)
+        model.compile(loss='categorical_crossentropy',
                   optimizer=opt,
                   metrics=['accuracy'])
 
-    if os.path.exists(modelPath):
-        model.load_weights(modelPath)
-        print('[INFO] loaded checkpoint...')
-
-    batchSize = 64
+    batchSize = 128
     # model.fit(trainX, trainY, validation_data=(devX, devY), batch_size=batchSize,
     #           epochs=20, verbose=2, callbacks=callbacks)
 
@@ -101,27 +97,21 @@ def train_model(trainX, trainY, devX, devY, args, lb):
         aug.flow(trainX, trainY, batch_size=batchSize, seed=42),
         validation_data=(devX, devY),
         steps_per_epoch=len(trainX) // batchSize,
-        epochs=10, callbacks=callbacks, verbose=2)
+        epochs=20, callbacks=callbacks, verbose=2)
 
     model = load_model(modelPath)
+    return model, batchSize
+
+
+def evaluate_model(model, lb, batch_size, devX, devY):
     print('[INFO] evaluating network...')
-    preds = model.predict(devX, batch_size=batchSize)
+    preds = model.predict(devX, batch_size=batch_size)
     print(classification_report(devY.argmax(axis=1),
                                 preds.argmax(axis=1), target_names=lb.classes_))
-    print(f'the experiment no is {args["no"]}')
-
-    testAcc, testAmount = test_model(args['no'], modelPath, config.TEST_DATA_PATH)
-    print(f'test: accuary/amount is {testAcc}/{testAmount}')
 
 
-def test_model(no, modelPath, path):
+def test_model(model, lb, path):
     """test the testset"""
-
-    model = load_model(modelPath)
-
-    with open(config.MODEL_LABELS, "rb") as f:
-        lb = pickle.load(f)
-
     data, labels = read_data_labels(path)
     data = np.array(data, dtype='float') / 255.0
     labels = np.array(labels)
@@ -130,13 +120,8 @@ def test_model(no, modelPath, path):
     preds = lb.inverse_transform(preds)
     amount = len(labels)
     assert len(preds) == len(labels)
-    ac = 0
-    for label, pred in zip(labels, preds):
-        if label == pred:
-            ac += 1
+    ac = sum(labels == preds)
 
-    print(f'[INFO] ac/amount: {ac}/{amount}')
-    print(f'[INFO] the experiment no is: {no}')
     return ac, amount
 
 
@@ -146,4 +131,8 @@ if __name__ == '__main__':
     devX, devY = prepare_data_labels(*read_data_labels(config.DEV_DATA_PATH))
     with open(config.MODEL_LABELS, 'rb') as f:
         lb = pickle.load(f)
-    train_model(trainX, trainY, devX, devY, args, lb)
+    model, batch_size = train_model(trainX, trainY, devX, devY, args)
+    evaluate_model(model, lb, batch_size, devX, devY)
+    testAcc, testAll = test_model(model, lb, config.TEST_DATA_PATH)
+    print(f'test: accuary/amount is {testAcc}/{testAll}')
+    print(f'[INFO] the experiment no is {args["no"]}')
