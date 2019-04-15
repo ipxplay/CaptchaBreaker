@@ -30,6 +30,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MyWindow, self).__init__(parent)
         self.setupUi(self)
+        self.model, self.lb = load_model_lables('3.3')
 
     def browseFile(self):
         options = QFileDialog.Options()
@@ -77,9 +78,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             # print(type(charImg))
             little.setPixmap(toQImage(np.array(charImg)))
 
-        model, lb = load_model_lables('3.3')
-
-        result, time = segment.recognize_whole(model, lb, charImgs)
+        result, time = segment.recognize_whole(self.model, self.lb, charImgs)
         self.time += time
 
         text1 = f'原始验证码：{self.oringal}'
